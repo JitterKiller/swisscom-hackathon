@@ -45,51 +45,6 @@ The pipeline:
 8. Optionally, **score a single candidate event** given history.
 
 ---
-
-## Repository Structure
-
-swisscome-hackathon/
-├─ README.md
-├─ requirements.txt
-├─ Dockerfile
-├─ .gitignore
-├─ data/
-│  └─ sample_edges.csv
-├─ scripts/
-│  ├─ run_train.sh
-│  └─ run_eval.sh
-├─ src/
-│  └─ stripe_lite/
-│     ├─ __init__.py
-│     ├─ data.py
-│     ├─ inject.py
-│     ├─ model.py
-│     ├─ train.py
-│     ├─ evaluate.py
-│     └─ utils.py
-└─ main.py
-
-
-## 📊 Expected Input Data
-
-Your CSV must contain at least the following columns:
-
-| Column      | Description                          |
-|-------------|--------------------------------------|
-| `src`       | Source node (string or int)          |
-| `dst`       | Destination node (string or int)     |
-| `label`     | Relation / edge type                 |
-| `timestamp` | Event timestamp (ISO-8601 recommended) |
-| `event_type`| `"add"` or `"remove"`                |
-
-Example (`data/sample_edges.csv`):
-
-```csv
-src,dst,label,timestamp,event_type
-A,B,connects,2024-01-01T00:00:00,add
-B,C,depends,2024-01-01T00:00:10,add
-A,B,connects,2024-01-01T00:05:00,remove
-C,D,connects,2024-01-01T00:05:05,add
 ### Part 1: Dataset Selection & Training Strategy
 
 #### 🔍 Initial Dataset Analysis
