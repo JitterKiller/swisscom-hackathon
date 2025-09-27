@@ -18,7 +18,7 @@ At Swisscom, we continuously collect information about network infrastructure in
 ### 🎯 Objective
 Develop a method to spot anomalies in large, dynamic knowledge graphs with **anomaly scores** to highlight suspicious parts, working in an unsupervised setting where test data contains "true information" for deviation detection.
 
-# STRIPE-Lite — Edge Anomaly Detection on Dynamic Knowledge Graphs
+## STRIPE-Lite — Edge Anomaly Detection on Dynamic Knowledge Graphs
 
 This repository provides a **lightweight implementation** of STRIPE-style edge anomaly detection for **dynamic knowledge graphs**.  
 The goal is to learn a model of **temporal edge plausibility** in an **unsupervised** way, then detect events that deviate from normal behavior.
