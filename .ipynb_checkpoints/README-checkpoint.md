@@ -1,3 +1,5 @@
+## 📂 Repository Structure
+
 # 🚀 Swisscom Hackathon: How can we automatically detect anomalies in a live, evolving knowledge graph?
 
 ## 📋 Problem Statement
@@ -16,7 +18,7 @@ At Swisscom, we continuously collect information about network infrastructure in
 ### 🎯 Objective
 Develop a method to spot anomalies in large, dynamic knowledge graphs with **anomaly scores** to highlight suspicious parts, working in an unsupervised setting where test data contains "true information" for deviation detection.
 
-## STRIPE-Lite — Edge Anomaly Detection on Dynamic Knowledge Graphs
+# STRIPE-Lite — Edge Anomaly Detection on Dynamic Knowledge Graphs
 
 This repository provides a **lightweight implementation** of STRIPE-style edge anomaly detection for **dynamic knowledge graphs**.  
 The goal is to learn a model of **temporal edge plausibility** in an **unsupervised** way, then detect events that deviate from normal behavior.
@@ -43,51 +45,6 @@ The pipeline:
 8. Optionally, **score a single candidate event** given history.
 
 ---
-
-## Repository Structure
-
-swisscome-hackathon/
-├─ README.md
-├─ requirements.txt
-├─ Dockerfile
-├─ .gitignore
-├─ data/
-│  └─ sample_edges.csv
-├─ scripts/
-│  ├─ run_train.sh
-│  └─ run_eval.sh
-├─ src/
-│  └─ stripe_lite/
-│     ├─ __init__.py
-│     ├─ data.py
-│     ├─ inject.py
-│     ├─ model.py
-│     ├─ train.py
-│     ├─ evaluate.py
-│     └─ utils.py
-└─ main.py
-
-
-## 📊 Expected Input Data
-
-Your CSV must contain at least the following columns:
-
-| Column      | Description                          |
-|-------------|--------------------------------------|
-| `src`       | Source node (string or int)          |
-| `dst`       | Destination node (string or int)     |
-| `label`     | Relation / edge type                 |
-| `timestamp` | Event timestamp (ISO-8601 recommended) |
-| `event_type`| `"add"` or `"remove"`                |
-
-Example (`data/sample_edges.csv`):
-
-```csv
-src,dst,label,timestamp,event_type
-A,B,connects,2024-01-01T00:00:00,add
-B,C,depends,2024-01-01T00:00:10,add
-A,B,connects,2024-01-01T00:05:00,remove
-C,D,connects,2024-01-01T00:05:05,add
 ### Part 1: Dataset Selection & Training Strategy
 
 #### 🔍 Initial Dataset Analysis
@@ -451,119 +408,6 @@ graph TD
 ---
 
 *This implementation demonstrates our ability to transform complex ML research into a practical, user-friendly application that solves real-world temporal graph anomaly detection challenges.*
-
----
-
-## 🚀 Running the Web Application
-
-### Prerequisites
-
-Before running the application, ensure you have the following installed:
-- **Python 3.8+** (for the backend)
-- **Node.js 16+** (for the frontend)
-- **npm** (comes with Node.js)
-
-### Quick Start
-
-#### 1. **Start the Backend API**
-```bash
-cd backend
-chmod +x start.sh
-./start.sh
-```
-The backend will start on `http://localhost:1337`
-
-#### 2. **Start the Frontend (in a new terminal)**
-```bash
-cd frontend
-chmod +x start.sh
-./start.sh
-```
-The frontend will start on `http://localhost:5173`
-
-#### 3. **Access the Application**
-Open your browser and navigate to `http://localhost:5173`
-
-### Manual Setup (Alternative)
-
-If you prefer to run components separately:
-
-#### Backend Setup
-```bash
-cd backend
-
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the Flask API
-python app.py
-```
-
-#### Frontend Setup
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Or build for production
-npm run build
-```
-
-### 🔧 Configuration
-
-#### Backend Configuration
-- **Port**: 1337 (configurable in `app.py`)
-- **Host**: 0.0.0.0 (accessible from any interface)
-- **Debug Mode**: Enabled for development
-- **CORS**: Enabled for frontend communication
-
-#### Frontend Configuration
-- **Dev Server**: Auto-reloads on file changes
-- **Port**: 5173 (default Vite port)
-- **Framework**: React 18 with Vite
-- **Styling**: Tailwind CSS
-- **Visualization**: D3.js for graph rendering
-
-### 🌐 API Endpoints
-
-The backend provides the following REST endpoints:
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/graphs` | List available graphs |
-| `GET` | `/api/graph-data/{id}` | Get specific graph data |
-| `POST` | `/api/predict` | Predict anomaly for edge |
-| `POST` | `/api/upload` | Upload new graph CSV |
-
-### 🛠️ Development Workflow
-
-1. **Start both backend and frontend** as described above
-2. **Backend changes**: Restart the Flask server to see changes
-3. **Frontend changes**: Vite auto-reloads on file changes
-4. **Test API**: Use browser dev tools or tools like Postman
-5. **Debug**: Check browser console and backend terminal output
-
-### 📁 Project Structure
-```
-swisscom-hackathon/
-├── backend/           # Flask API server
-│   ├── app.py        # Main application
-│   ├── requirements.txt
-│   └── start.sh      # Startup script
-├── frontend/          # React frontend
-│   ├── src/          # Source code
-│   ├── package.json  # Dependencies
-│   └── start.sh      # Startup script
-└── models/           # Pre-trained ML models
-```
 
 ---
 
