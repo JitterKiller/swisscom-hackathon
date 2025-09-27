@@ -1,5 +1,3 @@
-## 📂 Repository Structure
-
 # 🚀 Swisscom Hackathon: How can we automatically detect anomalies in a live, evolving knowledge graph?
 
 ## 📋 Problem Statement
