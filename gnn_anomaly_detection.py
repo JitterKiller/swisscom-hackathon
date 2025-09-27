@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 import pandas as pd
@@ -639,6 +640,164 @@ class GraphAnomalyDetectionPipeline:
         print(f"Anomaly detection rate: {np.mean(anomalous_anomalies):.2%}")
 
         return auc, ap
+
+# ========= NEW STRIPE LITE PIPELINE FUNCTIONS =========
+
+# Global variables for the new pipeline
+active_edges = set()
+last_seen = {}
+last_add_seen = {}
+BUCKET_FREQ = '1H'  # Bucket frequency for temporal aggregation
+NUM_RELS = None
+DEVICE = 'cpu'
+
+def iter_buckets(frame: pd.DataFrame, freq: str):
+    """
+    Yields (bucket_time, group_df_sorted_by_time)
+    """
+    if frame.empty:
+        return
+    for key, grp in frame.groupby(pd.Grouper(key='_ts', freq=freq)):
+        if len(grp):
+            yield key, grp.sort_values('_ts')
+
+def current_edge_index_and_types(num_rels: int):
+    """
+    Returns current active edges as tensors for GNN input
+    """
+    if not active_edges:
+        return None, None
+    arr = np.fromiter((x for t in active_edges for x in t), dtype=np.int64)
+    arr = arr.reshape(-1, 3)  # [E,3] -> (u,v,r)
+    u, v, r = arr[:,0], arr[:,1], arr[:,2]
+
+    # add reverse edges with offset relation types
+    r_rev = r + num_rels
+    edge_u = np.concatenate([u, v])
+    edge_v = np.concatenate([v, u])
+    edge_r = np.concatenate([r, r_rev])
+    edge_index = torch.as_tensor(np.stack([edge_u, edge_v], axis=0), dtype=torch.long, device=DEVICE)
+    edge_type = torch.as_tensor(edge_r, dtype=torch.long, device=DEVICE)
+    return edge_index, edge_type
+
+def build_state_until(frame_upto_ts: pd.DataFrame, model: nn.Module):
+    """
+    Replays history strictly before candidate time, bucket by BUCKET_FREQ,
+    updating memory and active state the same way as in training.
+    Returns h_mem with globals active_edges/last_seen/last_add_seen ready.
+    """
+    # reset globals
+    global active_edges, last_seen, last_add_seen
+    active_edges = set()
+    last_seen = {}
+    last_add_seen = {}
+
+    h_mem = model.init_memory(DEVICE)
+
+    # iterate buckets strictly BEFORE candidate ts
+    for bucket_ts, grp in iter_buckets(frame_upto_ts, BUCKET_FREQ):
+        if grp.empty:
+            continue
+        grp = grp.sort_values('_ts')
+
+        # encode on current snapshot (pre-update)
+        edge_index, edge_type = current_edge_index_and_types(NUM_RELS)
+        if edge_index is not None:
+            h_mem = h_mem.detach()
+            gnn_out = model.gnn_encode(edge_index, edge_type)
+            h_mem = model.update_memory(h_mem, gnn_out)
+
+        # then apply those events to mutate state (and update last_* trackers)
+        for _, row in grp.iterrows():
+            key = (int(row.u), int(row.v), int(row.r))
+            ts = row._ts
+            if int(row.is_add) == 1:
+                active_edges.add(key)
+                last_add_seen[key] = ts           # for removal Δt
+                last_seen[key] = ts               # for add Δt (last interaction)
+            else:
+                active_edges.discard(key)
+                last_seen[key] = ts               # last interaction was a remove
+
+    return h_mem
+
+def score_candidate_event(history_df: pd.DataFrame,
+                          candidate: dict,
+                          model: nn.Module,
+                          tau_add: float = 0.5,
+                          tau_rem: float = 0.5):
+    """
+    candidate = {
+      'u': int, 'v': int, 'r': int,
+      'timestamp_unix': pandas.Timestamp,      # event time t+1
+      'is_add': int (1 add, 0 remove)     # REQUIRED for two-head model
+    }
+    Returns (score, is_anomaly_bool)
+    """
+    # 1) Build state strictly before candidate time
+    h_df = history_df[history_df['_ts'] < candidate['timestamp_unix']]
+    h_mem = build_state_until(h_df, model)
+
+    # 2) Features as in training (pre-event snapshot)
+    u = torch.tensor([candidate['u']], dtype=torch.long, device=DEVICE)
+    v = torch.tensor([candidate['v']], dtype=torch.long, device=DEVICE)
+    r = torch.tensor([candidate['r']], dtype=torch.long, device=DEVICE)
+    is_add = torch.tensor([int(candidate['is_add'])], dtype=torch.long, device=DEVICE)
+
+    key = (int(candidate['u']), int(candidate['v']), int(candidate['r']))
+    alive_before = float(key in active_edges)
+    alive = torch.tensor([alive_before], dtype=torch.float32, device=DEVICE)
+
+    # Δt: add uses last_seen; remove uses last_add_seen
+    if int(candidate['is_add']) == 1:
+        prev_ts = last_seen.get(key)          # last interaction with this edge
+    else:
+        prev_ts = last_add_seen.get(key)      # last ADD time of this edge
+
+    if prev_ts is None:
+        dt_log1p = 0.0
+    else:
+        dt_log1p = np.log1p(max((candidate['timestamp_unix'] - prev_ts).total_seconds(), 0.0))
+    dt = torch.tensor([dt_log1p], dtype=torch.float32, device=DEVICE)
+
+    # 3) Score with the right head
+    with torch.no_grad():
+        logit = model.decode(h_mem, u, v, r, dt, alive, is_add)
+        score = torch.sigmoid(logit).item()
+
+    # 4) Threshold by head
+    thr = tau_add if int(candidate['is_add']) == 1 else tau_rem
+    is_anom = score < thr  # lower score = more anomalous (if that's your convention)
+
+    return score, is_anom
+
+def detect_one(i, df_test_aug, initial_df, model, tau_add=0.5, tau_rem=0.5):
+    """
+    Detect anomaly for a single test event
+    """
+    cand_row = df_test_aug.iloc[i]
+    history = initial_df[initial_df['_ts'] < cand_row['_ts']]  # strictly before candidate time
+    candidate = {
+        'u': int(cand_row['u']),
+        'v': int(cand_row['v']),
+        'r': int(cand_row['r']),
+        'timestamp_unix': cand_row['_ts'],           # pandas.Timestamp
+        'is_add': int(cand_row['is_add']),      # 1 for add, 0 for remove
+    }
+    score, is_anom = score_candidate_event(history, candidate, model,
+                                           tau_add=tau_add, tau_rem=tau_rem)
+
+    true_label = df_test_aug.iloc[i]["anomaly"]
+    if is_anom:
+        if true_label:
+            return {"pred": "ANOMALY", "true": "ANOMALY", "score": score, "correct": True}
+        else:
+            return {"pred": "ANOMALY", "true": "NORMAL", "score": score, "correct": False}
+    else:
+        if true_label:
+            return {"pred": "NORMAL", "true": "ANOMALY", "score": score, "correct": False}
+        else:
+            return {"pred": "NORMAL", "true": "NORMAL", "score": score, "correct": True}
 
 # Usage example
 if __name__ == "__main__":

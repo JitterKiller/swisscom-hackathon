@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import PredictAnomalyPage from './pages/PredictAnomalyPage'
 import UploadGraphPage from './pages/UploadGraphPage'
+import DatastreamPage from './pages/DatastreamPage'
 
 function App() {
   const [activePage, setActivePage] = useState('predict')
@@ -10,6 +11,8 @@ function App() {
     switch (activePage) {
       case 'predict':
         return <PredictAnomalyPage />
+      case 'datastream':
+        return <DatastreamPage />
       case 'upload':
         return <UploadGraphPage />
       default:

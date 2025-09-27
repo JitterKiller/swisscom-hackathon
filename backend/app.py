@@ -642,6 +642,61 @@ def get_upload_status(upload_id):
         'message': 'File processed successfully'
     })
 
+# ========= DATASTREAM ENDPOINTS =========
+
+@app.route('/api/datastream/initial', methods=['GET'])
+def get_initial_data():
+    """Get initial dataset for datastream (first 5 rows)"""
+    try:
+        df = pd.read_csv('./uploads/initial_df.csv')
+        # Convert to the format expected by frontend
+        events = []
+        for _, row in df.head(5).iterrows():
+            events.append({
+                'timestamp': int(row['timestamp_unix']) if 'timestamp_unix' in row else 0,
+                'source': str(row['src']) if 'src' in row else '',
+                'destination': str(row['dest']) if 'dest' in row else '',
+                'label': str(row['label']) if 'label' in row else '',
+                'event_type': 'add' if row.get('event_type') == 'add' else 'remove',
+                'prediction': 'NORMAL',  # Will be computed later
+                'true_label': 'NORMAL',  # Will be computed later
+                'correct': True
+            })
+        return jsonify(events)
+    except Exception as e:
+        print(f"Error loading initial data: {e}")
+        return jsonify({'error': 'Failed to load initial data'}), 500
+
+@app.route('/api/datastream/test', methods=['GET'])
+def get_test_data():
+    """Get test dataset for datastream (first 1000 rows)"""
+    try:
+        df = pd.read_csv('./uploads/df_test_aug.csv')
+
+        # Convert _ts to datetime and shift by +189639 seconds
+        df['_ts'] = pd.to_datetime(df['_ts'])
+        df['_ts'] = df['_ts'] + pd.Timedelta(seconds=189639)
+
+        # Convert to the format expected by frontend
+        events = []
+        for _, row in df.head(1000).iterrows():
+            # Convert timestamp to unix timestamp in milliseconds
+            timestamp_ms = int(row['_ts'].timestamp() * 1000)
+            events.append({
+                'timestamp': timestamp_ms,
+                'source': str(row['src']) if 'src' in row else '',
+                'destination': str(row['dest']) if 'dest' in row else '',
+                'label': str(row['label']) if 'label' in row else '',
+                'event_type': 'add' if row.get('event_type') == 'add' else 'remove',
+                'prediction': 'NORMAL',  # Will be computed by frontend
+                'true_label': 'ANOMALY' if row.get('anomaly', False) else 'NORMAL',
+                'correct': False  # Will be computed by frontend
+            })
+        return jsonify(events)
+    except Exception as e:
+        print(f"Error loading test data: {e}")
+        return jsonify({'error': 'Failed to load test data'}), 500
+
 @app.errorhandler(413)
 def too_large(e):
     return jsonify({'error': 'File too large'}), 413

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Activity, Upload, Zap } from 'lucide-react'
+import { Activity, Upload, Zap, Database } from 'lucide-react'
 
 const Sidebar = ({ activePage, setActivePage }) => {
   const menuItems = [
@@ -8,6 +8,12 @@ const Sidebar = ({ activePage, setActivePage }) => {
       label: 'Predict Edge Anomaly',
       icon: Activity,
       description: 'Analysez les anomalies d\'arêtes'
+    },
+    {
+      id: 'datastream',
+      label: 'Datastream Events',
+      icon: Database,
+      description: 'Visualisez le flux d\'événements'
     },
     {
       id: 'upload',

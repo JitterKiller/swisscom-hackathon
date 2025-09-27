@@ -386,4 +386,117 @@ graph TD
 
 ---
 
+## 🚀 Running the Web Application
+
+### Prerequisites
+
+Before running the application, ensure you have the following installed:
+- **Python 3.8+** (for the backend)
+- **Node.js 16+** (for the frontend)
+- **npm** (comes with Node.js)
+
+### Quick Start
+
+#### 1. **Start the Backend API**
+```bash
+cd backend
+chmod +x start.sh
+./start.sh
+```
+The backend will start on `http://localhost:1337`
+
+#### 2. **Start the Frontend (in a new terminal)**
+```bash
+cd frontend
+chmod +x start.sh
+./start.sh
+```
+The frontend will start on `http://localhost:5173`
+
+#### 3. **Access the Application**
+Open your browser and navigate to `http://localhost:5173`
+
+### Manual Setup (Alternative)
+
+If you prefer to run components separately:
+
+#### Backend Setup
+```bash
+cd backend
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the Flask API
+python app.py
+```
+
+#### Frontend Setup
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Or build for production
+npm run build
+```
+
+### 🔧 Configuration
+
+#### Backend Configuration
+- **Port**: 1337 (configurable in `app.py`)
+- **Host**: 0.0.0.0 (accessible from any interface)
+- **Debug Mode**: Enabled for development
+- **CORS**: Enabled for frontend communication
+
+#### Frontend Configuration
+- **Dev Server**: Auto-reloads on file changes
+- **Port**: 5173 (default Vite port)
+- **Framework**: React 18 with Vite
+- **Styling**: Tailwind CSS
+- **Visualization**: D3.js for graph rendering
+
+### 🌐 API Endpoints
+
+The backend provides the following REST endpoints:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/graphs` | List available graphs |
+| `GET` | `/api/graph-data/{id}` | Get specific graph data |
+| `POST` | `/api/predict` | Predict anomaly for edge |
+| `POST` | `/api/upload` | Upload new graph CSV |
+
+### 🛠️ Development Workflow
+
+1. **Start both backend and frontend** as described above
+2. **Backend changes**: Restart the Flask server to see changes
+3. **Frontend changes**: Vite auto-reloads on file changes
+4. **Test API**: Use browser dev tools or tools like Postman
+5. **Debug**: Check browser console and backend terminal output
+
+### 📁 Project Structure
+```
+swisscom-hackathon/
+├── backend/           # Flask API server
+│   ├── app.py        # Main application
+│   ├── requirements.txt
+│   └── start.sh      # Startup script
+├── frontend/          # React frontend
+│   ├── src/          # Source code
+│   ├── package.json  # Dependencies
+│   └── start.sh      # Startup script
+└── models/           # Pre-trained ML models
+```
+
+---
+
 *This approach demonstrates our understanding that effective AI solutions require both **technical sophistication** and **strategic data thinking** to overcome real-world constraints.*
